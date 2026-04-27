@@ -1,0 +1,14 @@
+{
+  "name": "recipe-pwa-monorepo",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "concurrently -n server,client -c blue,green \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
+    "build": "npm run build --prefix server && npm run build --prefix client",
+    "dev:server": "npm run dev --prefix server",
+    "dev:client": "npm run dev --prefix client"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
