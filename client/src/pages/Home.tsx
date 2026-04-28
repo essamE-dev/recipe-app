@@ -1,18 +1,19 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { RecipeCard } from "@/components/recipe-card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getCategories, getMealsByCategory, searchMeals, type Meal } from "@/lib/api";
+import { getCategories, getMealById, getMealsByCategory, searchMeals, type Meal } from "@/lib/api";
 import { getAllFavorites, removeFavorite, saveFavorite } from "@/features/favorites/db";
+import { warmImageCache } from "@/lib/offline-cache";
 
 type HomeProps = {
   query: string;
 };
 
 export const Home = ({ query }: HomeProps) => {
-  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("Beef");
   const [favoriteMap, setFavoriteMap] = useState<Record<string, boolean>>({});
 
   const categoriesQuery = useQuery({
@@ -58,21 +59,31 @@ export const Home = ({ query }: HomeProps) => {
       return;
     }
 
-    // For category-list results, we may not have full details; save known data safely for offline lists.
+    // Persist the full recipe payload so favorite details remain available offline.
+    const fullMeal =
+      mealLike.strInstructions && mealLike.strCategory && mealLike.strArea
+        ? (mealLike as Meal)
+        : await getMealById(mealLike.idMeal);
+
     await saveFavorite({
       ...mealLike,
+      ...fullMeal,
       idMeal: mealLike.idMeal,
       strMeal: mealLike.strMeal,
-      strMealThumb: mealLike.strMealThumb ?? "/icons/icon-192.svg",
-      strCategory: mealLike.strCategory ?? "",
-      strArea: mealLike.strArea ?? "",
-      strInstructions: mealLike.strInstructions ?? ""
+      strMealThumb: mealLike.strMealThumb ?? fullMeal?.strMealThumb ?? "/icons/icon-192.svg",
+      strCategory: fullMeal?.strCategory ?? mealLike.strCategory ?? "",
+      strArea: fullMeal?.strArea ?? mealLike.strArea ?? "",
+      strInstructions: fullMeal?.strInstructions ?? mealLike.strInstructions ?? ""
     } as Meal);
     setFavoriteMap((prev) => ({ ...prev, [mealLike.idMeal]: true }));
     toast.success("Added to favorites");
   };
 
   const meals = useMemo(() => mealsQuery.data ?? [], [mealsQuery.data]);
+
+  useEffect(() => {
+    void warmImageCache(meals.map((meal) => meal.strMealThumb));
+  }, [meals]);
 
   return (
     <section aria-labelledby="discover-recipes" className="space-y-6">
@@ -84,13 +95,6 @@ export const Home = ({ query }: HomeProps) => {
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <Button
-          variant={selectedCategory ? "outline" : "secondary"}
-          onClick={() => setSelectedCategory("")}
-          aria-pressed={!selectedCategory}
-        >
-          All
-        </Button>
         {categoriesQuery.isLoading
           ? Array.from({ length: 6 }).map((_, index) => <Skeleton key={index} className="h-9 w-24" />)
           : categoriesQuery.data?.map((category) => (

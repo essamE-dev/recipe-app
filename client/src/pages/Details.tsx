@@ -1,5 +1,5 @@
 import { Heart, Youtube } from "lucide-react";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getMealById } from "@/lib/api";
 import { getFavorite, removeFavorite, saveFavorite } from "@/features/favorites/db";
+import { warmImageCache } from "@/lib/offline-cache";
 
 const getIngredients = (meal: Record<string, string | undefined>) =>
   Array.from({ length: 20 })
@@ -25,7 +26,18 @@ export const Details = () => {
 
   const mealQuery = useQuery({
     queryKey: ["meal", id],
-    queryFn: () => getMealById(id),
+    queryFn: async () => {
+      try {
+        const meal = await getMealById(id);
+        if (meal) {
+          return meal;
+        }
+      } catch {
+        // Fall back to IndexedDB when offline or the API is unavailable.
+      }
+
+      return (await getFavorite(id)) ?? null;
+    },
     enabled: Boolean(id)
   });
 
@@ -40,6 +52,14 @@ export const Details = () => {
       return [];
     }
     return getIngredients(mealQuery.data);
+  }, [mealQuery.data]);
+
+  useEffect(() => {
+    if (!mealQuery.data?.strMealThumb) {
+      return;
+    }
+
+    void warmImageCache([mealQuery.data.strMealThumb]);
   }, [mealQuery.data]);
 
   const handleFavorite = async () => {

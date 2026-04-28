@@ -12,9 +12,8 @@ export const AppHeader = ({ query, onQueryChange }: AppHeaderProps) => (
     <div className="container flex flex-col gap-3 py-4 md:flex-row md:items-center md:justify-between">
       <div className="flex items-center justify-between gap-3">
         <Link className="text-xl font-bold text-primary" to="/">
-          Recipe PWA
+          Recipe
         </Link>
-        <ThemeToggle />
       </div>
 
       <div className="flex flex-1 items-center gap-2 md:max-w-xl">
@@ -29,24 +28,27 @@ export const AppHeader = ({ query, onQueryChange }: AppHeaderProps) => (
         />
       </div>
 
-      <nav aria-label="Main navigation" className="flex items-center gap-2">
-        <NavLink
-          to="/"
-          className={({ isActive }) =>
-            `rounded-md px-3 py-2 text-sm ${isActive ? "bg-primary text-primary-foreground" : "hover:bg-accent"}`
-          }
-        >
-          Home
-        </NavLink>
-        <NavLink
-          to="/favorites"
-          className={({ isActive }) =>
-            `rounded-md px-3 py-2 text-sm ${isActive ? "bg-primary text-primary-foreground" : "hover:bg-accent"}`
-          }
-        >
-          Favorites
-        </NavLink>
-      </nav>
+      <div className="flex items-center justify-end gap-2">
+        <nav aria-label="Main navigation" className="flex items-center gap-2">
+          <NavLink
+            to="/"
+            className={({ isActive }) =>
+              `rounded-md px-3 py-2 text-sm ${isActive ? "bg-primary text-primary-foreground" : "hover:bg-accent"}`
+            }
+          >
+            Home
+          </NavLink>
+          <NavLink
+            to="/favorites"
+            className={({ isActive }) =>
+              `rounded-md px-3 py-2 text-sm ${isActive ? "bg-primary text-primary-foreground" : "hover:bg-accent"}`
+            }
+          >
+            Favorites
+          </NavLink>
+        </nav>
+        <ThemeToggle />
+      </div>
     </div>
   </header>
 );

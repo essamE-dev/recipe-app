@@ -1,10 +1,11 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { RecipeCard } from "@/components/recipe-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getAllFavorites, removeFavorite } from "@/features/favorites/db";
+import { warmImageCache, warmMealDetailsCache } from "@/lib/offline-cache";
 
 export const Favorites = () => {
   const [filter, setFilter] = useState("");
@@ -28,6 +29,12 @@ export const Favorites = () => {
     }
     return list;
   }, [favoritesQuery.data, filter, sort]);
+
+  useEffect(() => {
+    const favorites = favoritesQuery.data ?? [];
+    void warmImageCache(favorites.map((meal) => meal.strMealThumb));
+    void warmMealDetailsCache(favorites.map((meal) => meal.idMeal));
+  }, [favoritesQuery.data]);
 
   const handleRemove = async (id: string) => {
     await removeFavorite(id);
