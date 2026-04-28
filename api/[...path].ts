@@ -47,7 +47,17 @@ export default async function handler(req: any, res: any) {
     return;
   }
 
-  const rawPath = Array.isArray(req.query.path) ? req.query.path.join("/") : String(req.query.path ?? "");
+  const getSingleQueryValue = (value: unknown): string => {
+    if (Array.isArray(value)) {
+      return typeof value[0] === "string" ? value[0] : "";
+    }
+    return typeof value === "string" ? value : "";
+  };
+
+  const pathFromQuery = Array.isArray(req.query.path) ? req.query.path.join("/") : getSingleQueryValue(req.query.path);
+  const pathname = typeof req.url === "string" ? new URL(req.url, "http://localhost").pathname : "";
+  const pathFromUrl = pathname.replace(/^\/api\/?/, "");
+  const rawPath = pathFromQuery || pathFromUrl;
   const segments = rawPath.split("/").filter(Boolean);
   const route = segments[0] ?? "";
 
@@ -74,14 +84,14 @@ export default async function handler(req: any, res: any) {
     }
 
     if (route === "search") {
-      const query = typeof req.query.q === "string" ? req.query.q : "";
+      const query = getSingleQueryValue(req.query.q);
       const data = await fetchMealDb<{ meals: unknown[] | null }>("search.php", new URLSearchParams({ s: query }));
       json(res, 200, data, "public, max-age=30, stale-while-revalidate=120");
       return;
     }
 
     if (route === "filter") {
-      const category = typeof req.query.category === "string" ? req.query.category : "";
+      const category = getSingleQueryValue(req.query.category);
       const data = await fetchMealDb<{ meals: unknown[] | null }>("filter.php", new URLSearchParams({ c: category }));
       json(res, 200, data, "public, max-age=60, stale-while-revalidate=240");
       return;
