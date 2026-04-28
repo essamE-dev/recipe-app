@@ -29,8 +29,11 @@ app.get("/health", (_req, res) => {
   res.json({ ok: true });
 });
 
+// Support both local server paths (/api/*) and serverless direct paths (/*).
 app.use("/api", apiLimiter);
+app.use(apiLimiter);
 app.use("/api", mealdbRouter);
+app.use(mealdbRouter);
 
 app.use((_req, res) => {
   res.status(404).json({ error: "Route not found" });
